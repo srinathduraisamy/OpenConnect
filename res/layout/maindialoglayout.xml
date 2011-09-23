@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+	android:id="@+id/mainLayout"
+    android:layout_width="fill_parent"
+    android:layout_height="wrap_content"
+    android:layout_centerInParent="true"
+	>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/contentLayout"
+    android:layout_width="fill_parent"
+    android:layout_height="wrap_content"
+    android:layout_centerInParent="true"
+	android:paddingLeft="25px"
+	>
+<TextView
+    android:id="@+id/serverLabel"	  
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:gravity="center_vertical|center_horizontal"
+    android:textAppearance="?android:attr/textAppearanceMedium"
+	android:text="Type a server"
+    android:layout_alignBottom="@+id/serverText" android:layout_alignParentTop="true"/>
+<EditText
+    android:id="@+id/serverText"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:layout_marginLeft="15px"	
+	android:layout_alignParentRight="true"     
+	android:singleLine="true"
+	android:background="@android:drawable/editbox_background"
+ 	android:layout_toRightOf="@id/serverLabel"
+	android:cursorVisible="true"/>
+<Button android:id="@+id/connectButton" 
+   	android:layout_width="250px" 
+   	android:layout_height="wrap_content" 
+  	android:layout_below="@id/serverText"
+  	android:layout_marginTop="20px"
+	android:text="Connect"
+	android:onClick="onConnectClicked"
+	/>
+</RelativeLayout>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+	android:id="@+id/logLayout"
+    android:layout_width="fill_parent"
+    android:layout_height="wrap_content"
+	android:layout_alignParentBottom="true" 
+    android:paddingTop="5px"
+    >
+<TextView
+    android:id="@+id/logLabel"	  
+    android:layout_width="wrap_content" 
+    android:layout_height="wrap_content" 
+    android:gravity="center_vertical|center_horizontal"
+	android:paddingLeft="25px"
+    android:paddingTop="50px"
+    android:textAppearance="?android:attr/textAppearanceMedium"
+    android:text="Log: "
+   	/>
+<TextView
+    android:id="@+id/logText"	  
+    android:layout_width="wrap_content" 
+    android:layout_height="wrap_content" 
+    android:gravity="center_vertical|center_horizontal"
+	android:paddingLeft="25px"
+    android:paddingTop="50px"
+    android:textAppearance="?android:attr/textAppearanceMedium"
+    android:text="Enter Server address"
+	android:layout_toRightOf="@id/logLabel"
+   	/>
+</RelativeLayout>
+</RelativeLayout>
+
