@@ -144,9 +144,10 @@ public class DialogFromXml  {
 
 			if(xmlDoc == null) return -1;
 			
-			// Get the root node
-			Node rootNode = xmlDoc.getFirstChild().getNextSibling();
+			// Get the root node and validate it.
+			Node rootNode = xmlDoc.getFirstChild();
 			if(rootNode == null) return -1;
+			if( rootNode.getNodeType() != Node.ELEMENT_NODE) return -1;
 			
 			if(rootNode.getNodeName().compareTo("auth") != 0) {
 				StatusLog.updateLog().updateErrorMsg("XML response has no \"auth\" root node" );
@@ -303,7 +304,7 @@ public class DialogFromXml  {
 		// Add the created layout and controls into main layout
 		addFormToMainLayout(formLayout);
 		
-		// If the form contain error meesage display it in the log layout
+		// If the form contain error message display it in the log layout
 		if(mErrorMessage != null) {
 			StatusLog.updateLog().updateErrorMsg(mErrorMessage); 
 		}
