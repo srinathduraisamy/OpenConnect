@@ -20,21 +20,11 @@
     android:textAppearance="?android:attr/textAppearanceMedium"
 	android:text="Type a server"
     android:layout_alignBottom="@+id/serverText" android:layout_alignParentTop="true"/>
-<EditText
-    android:id="@+id/serverText"
-    android:layout_width="wrap_content"
-    android:layout_height="wrap_content"
-    android:layout_marginLeft="15px"	
-	android:layout_alignParentRight="true"     
-	android:singleLine="true"
-	android:background="@android:drawable/editbox_background"
- 	android:layout_toRightOf="@id/serverLabel"
-	android:cursorVisible="true"/>
-<Button android:id="@+id/connectButton" 
-   	android:layout_width="250px" 
+ <Button android:id="@+id/connectButton"
+    android:layout_width="250px" 
    	android:layout_height="wrap_content" 
   	android:layout_below="@id/serverText"
-  	android:layout_marginTop="20px"
+  	android:layout_marginTop="100px"
 	android:text="Connect"
 	android:onClick="onConnectClicked"
 	/>

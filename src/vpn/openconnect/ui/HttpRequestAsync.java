@@ -19,11 +19,10 @@ import java.io.IOException;
  */ 
 public class HttpRequestAsync extends AsyncTask<HttpUriRequest, Integer, HttpResponse> {
    
-	private Activity mMainActivity;
 	private HttpClient mHttpClient;
 	private HttpContext mHttpContext;
 	private Handler mErrorLogHandler;
-	private ProgressDialog mDownloadProgressBar = null;
+	private ProgressDialog mDownloadProgressBar;
 	
 	/**
 	 *  Constructor
@@ -31,10 +30,15 @@ public class HttpRequestAsync extends AsyncTask<HttpUriRequest, Integer, HttpRes
 	HttpRequestAsync(Activity activity, HttpClient httpClient, HttpContext httpContext, Handler errorLogHandler) {
 		
 		// Initialize the member variables
-		mMainActivity    = activity;
 		mHttpClient      = httpClient;
 		mHttpContext     = httpContext;
 		mErrorLogHandler = errorLogHandler; 
+
+		// Create and initialize progress bar
+		mDownloadProgressBar = new ProgressDialog(activity);
+		mDownloadProgressBar.setMessage("Loading");
+		mDownloadProgressBar.setIndeterminate(true);
+		mDownloadProgressBar.setCancelable(false);
 	}
 		
 	/**
@@ -63,9 +67,9 @@ public class HttpRequestAsync extends AsyncTask<HttpUriRequest, Integer, HttpRes
 			Message errorMsg = mErrorLogHandler.obtainMessage();
 			errorMsg.obj = e.getMessage();
 			mErrorLogHandler.sendMessage(errorMsg);
-			
+
 		}
-		
+
 		return null;
 	}
 	
@@ -75,8 +79,7 @@ public class HttpRequestAsync extends AsyncTask<HttpUriRequest, Integer, HttpRes
 	 */
 	protected void onProgressUpdate (Integer... values) {
 		super.onProgressUpdate(values[0]);
-		
-		mDownloadProgressBar = ProgressDialog.show(mMainActivity, "", "Loading", true, false);
+		mDownloadProgressBar.show();
 	}
 	
 	/**
@@ -88,4 +91,5 @@ public class HttpRequestAsync extends AsyncTask<HttpUriRequest, Integer, HttpRes
 		mDownloadProgressBar.hide();
 		mHttpClient.receivedResponse(response);
 	}
+
 }

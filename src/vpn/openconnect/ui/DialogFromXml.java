@@ -1,6 +1,14 @@
 package vpn.openconnect.ui;
 
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.Reader;
+
 import android.app.Activity;
+import android.app.AlertDialog;
+import android.content.DialogInterface;
 import android.text.method.PasswordTransformationMethod;
 import android.view.View;
 import android.view.ViewGroup.LayoutParams;
@@ -14,23 +22,17 @@ import android.widget.TableLayout;
 import android.widget.TextView;
 import android.widget.AdapterView.OnItemSelectedListener;
 
-import org.w3c.dom.Document;
+import org.apache.http.Header;
+import org.apache.http.client.methods.HttpGet;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
-import org.xml.sax.SAXException;
-
-import java.io.IOException;
-import java.io.InputStream;
-
-import javax.xml.parsers.DocumentBuilder;
-import javax.xml.parsers.DocumentBuilderFactory;
-import javax.xml.parsers.ParserConfigurationException;
 
 /**
  * Class to create Dialog from the input xml contents.
  */
 public class DialogFromXml  {
    
+	// Member variables
 	private final String USERNAME       = "username";
 	private final String PASSWORD       = "password";
 	private EditText mUsernameEditText  = null;
@@ -38,6 +40,7 @@ public class DialogFromXml  {
 	private Node mGroupNode             = null;
 	private String mFormMessage         = null;
 	private String mErrorMessage        = null;
+	private String mWebVpn              = null;
 	private int mGroupSelectionPos      = 0;
 	private Activity mMainActivity;
 	private HttpClient mHttpClient;
@@ -133,57 +136,81 @@ public class DialogFromXml  {
 	/**
 	 * Parse the xml response received for the server
 	 */ 
-	public int parseXmlResponse(InputStream inputStream) {
+	public int parseXmlResponse(Node rootNode, Header[] headers) {
 		
-		try {
-			
-			// Generate the doc for xml parsing
-			DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
-	        DocumentBuilder docBuilder = factory.newDocumentBuilder();
-			Document xmlDoc = docBuilder.parse(inputStream);
+		// Authentication succeed 
+		if(rootNode.getAttributes().item(0).getNodeValue().compareTo("success") == 0) {
 
-			if(xmlDoc == null) return -1;
-			
-			// Get the root node and validate it.
-			Node rootNode = xmlDoc.getFirstChild();
-			if(rootNode == null) return -1;
-			if( rootNode.getNodeType() != Node.ELEMENT_NODE) return -1;
-			
-			if(rootNode.getNodeName().compareTo("auth") != 0) {
-				StatusLog.updateLog().updateErrorMsg("XML response has no \"auth\" root node" );
-			}
-			
-			if(rootNode.getAttributes().item(0).getNodeValue().compareTo("success") == 0) {
-				// TODO: Implement the functionality for success case
-				return 2;
-			}
-			
-			// Iterate through the xml nodes
-			for(Node currentNode = rootNode.getFirstChild(); currentNode != null; currentNode = currentNode.getNextSibling()) {
-
-				if( currentNode.getNodeType() != Node.ELEMENT_NODE) continue;
+			// Retrieve the webvpn cookie 
+			for(int i = 0; i < headers.length; i++) { 
 				
-				if(mFormMessage == null) {
-					if(currentNode.getNodeName().compareTo("message") == 0) {
-						mFormMessage = currentNode.getFirstChild().getNodeValue();
+				if(headers[i].getElements()[0] != null) {
+				
+					if(headers[i].getElements()[0].getName().compareTo("webvpn") == 0) {
+					
+						mWebVpn = headers[i].getElements()[0].getValue();
+						
+						//Display the webvpn cookie in message box
+						AlertDialog.Builder builder = new AlertDialog.Builder(mMainActivity); 
+						builder.setMessage("WebVPN Cookie:" + mWebVpn) 
+						        .setCancelable(false)
+						    	.setPositiveButton("Ok", new DialogInterface.OnClickListener() { 
+						    		// On yes button clicked 
+						    		public void onClick(DialogInterface dialog, int id) {     		    
+						    		} }); 
+						AlertDialog alert = builder.create();
+						alert.show(); 
+					
+					} else if(headers[i].getElements()[0].getName().compareTo("webvpnc") == 0) {
+					
+						// Retrieve the webvpnc cookies
+						String bu = null;
+						String fu = null;
+						String sh = null;
+						
+						String[] cookies = headers[i].getElements()[0].getValue().split("&");
+						
+						for(int j = 0; j < cookies.length; j++) {
+							
+							String[] tokens = cookies[j].split(":");
+							if(tokens.length == 2) {
+								if(tokens[0].compareTo("bu") == 0) bu = tokens[1];
+								if(tokens[0].compareTo("fu") == 0) fu = tokens[1];
+								if(tokens[0].compareTo("fh") == 0) {
+									
+									if(compareSha1(tokens[1]) == false )
+										sh = tokens[1];
+								}
+							}
+						}
+							
+						if(bu != null && fu != null && sh != null) 	
+							fetchConfig(mWebVpn, bu, fu, sh);
 					}
 				}
-								
-				if(mErrorMessage == null) {
-					if(currentNode.getNodeName().compareTo("error") == 0) {
-						mErrorMessage = currentNode.getAttributes().getNamedItem("param1").getNodeValue();
-					}
-				}
-								
-				if(currentNode.getNodeName().compareTo("form") == 0) parseForm(currentNode);
 			}
+								
+			return 2;
+		}
 			
-		} catch (SAXException e) {
-			StatusLog.updateLog().updateErrorMsg("Failed to parse server response");		
-		} catch (IOException e) {
-			StatusLog.updateLog().updateErrorMsg("IO exception");
-		} catch (ParserConfigurationException e) {
-			StatusLog.updateLog().updateErrorMsg("IllegalStateException");
+		// Iterate through the xml nodes
+		for(Node currentNode = rootNode.getFirstChild(); currentNode != null; currentNode = currentNode.getNextSibling()) {
+			
+			if( currentNode.getNodeType() != Node.ELEMENT_NODE) continue;
+			
+			if(mFormMessage == null) {
+				if(currentNode.getNodeName().compareTo("message") == 0) {
+					mFormMessage = currentNode.getFirstChild().getNodeValue();
+				}
+			}
+								
+			if(mErrorMessage == null) {
+				if(currentNode.getNodeName().compareTo("error") == 0) {
+					mErrorMessage = currentNode.getFirstChild().getNodeValue();
+				}
+			}
+								
+			if(currentNode.getNodeName().compareTo("form") == 0) parseForm(currentNode);
 		}
 		
 		return 0;
@@ -285,7 +312,8 @@ public class DialogFromXml  {
 						mUsernameEditText = new EditText(mMainActivity);
 						mUsernameEditText.setSingleLine();
 						formLayout.addView(mUsernameEditText);
-					} 
+					}
+					
 				} else if(str.compareTo(PASSWORD) == 0) {
 					
 					TextView view = new TextView(mMainActivity);
@@ -294,7 +322,7 @@ public class DialogFromXml  {
 					formLayout.addView(view);
 					
 					mPasswordEditText = new EditText(mMainActivity);
-					mUsernameEditText.setSingleLine();
+					mPasswordEditText.setSingleLine();
 					mPasswordEditText.setTransformationMethod(new PasswordTransformationMethod());
 					formLayout.addView(mPasswordEditText);
 				}
@@ -326,5 +354,71 @@ public class DialogFromXml  {
 		TableLayout.LayoutParams params = new TableLayout.LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT);
 		mainLayout.addView(formLayout, params);
 		mainLayout.addView(logLayout);
+	}
+	
+	/**
+	 * Fetches the configuration xml file from the server
+	 */
+	public void fetchConfig(String webVpn, String bu, String fu, String sh) {
+		
+		// Add the cookie values
+		StringBuilder cookie = new StringBuilder("webvpn=" + webVpn + "; ");
+		cookie.append("webvpnc=bu:" + bu + "; "); 
+		cookie.append("webvpnaac=1");
+				
+		// Create the HttpGet request
+		HttpGet httpGet = new HttpGet(mHttpClient.getServerAddress() + bu + fu);
+		httpGet.setHeader("Accept", "*/*");
+		httpGet.setHeader("Accept-Encoding", "identity");
+		httpGet.setHeader("Cookie", cookie.toString());
+		httpGet.setHeader("X-Transcend-Version", "1");
+			
+		// Send the request async
+		mHttpClient.sendHttpGetRequest(httpGet);
+	
+	}
+	
+	/**
+	 * Compare the Sha1 of the existing configuration file and the Sha1 of the downloading one  
+	 */
+	boolean compareSha1(String downloadedSha1) {
+	
+		StringBuilder message = new StringBuilder();;
+		
+		try {
+			
+			// Calculate the Sha1 of the config.xml file
+			InputStream fileInputStream = mMainActivity.openFileInput("config.xml");
+			
+			// Read the data from the file
+			char[] buffer = new char[100];
+			Reader inputStreamReader = new InputStreamReader(fileInputStream, "UTF-8");
+			int dataRead;
+			
+			do {
+				
+				dataRead = inputStreamReader.read(buffer, 0, buffer.length);
+				if (dataRead > 0) {
+					message.append(buffer, 0, dataRead);
+				}
+				
+			} while (dataRead >= 0);
+			
+		} catch	(FileNotFoundException e) {
+			e.printStackTrace();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+			
+		if(message.toString().length() > 0) {
+			
+			// Calculate the Sha1
+			String fileSha1Hash = Sha1.computeSha1OfString(message.toString());
+					
+			// Compare the sha1 of the config.xml and retrieved sha1
+			if( fileSha1Hash.compareTo(downloadedSha1.toLowerCase()) == 0 ) return true;
+		}
+		
+		return false;
 	}
 }
